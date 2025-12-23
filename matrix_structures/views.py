@@ -900,3 +900,236 @@ def affiche_timsort(request):
         "input_list": input_list,
         "minrun": minrun
     })
+# ===================== CALCUL MINRUN =====================
+def calc_minrun(n):
+    r = 0
+    while n >= 64:
+        r |= n & 1
+        n >>= 1
+    return n + r
+
+# ===================== TIMSORT AVEC ETAPES =====================
+def timsort_main_steps(arr, minrun):
+    steps = []
+    n = len(arr)
+
+    # fonction pour enregistrer les étapes (sans complexité)
+    def snapshot(label, run_left=None, run_right=None):
+        run_block = None
+        inserted = []
+        if run_left is not None and run_right is not None:
+            run_block = arr[run_left:run_right+1]
+            inserted = run_block.copy()
+        steps.append({
+            "label": label,
+            "array": arr.copy(),
+            "run_left": run_left,
+            "run_right": run_right,
+            "run_block": run_block,
+            "inserted": inserted
+        })
+
+    # 1) Détection des runs + tri par insertion
+    i = 0
+    while i < n:
+        left = i
+        right = min(i + minrun - 1, n - 1)
+        snapshot(f"📌 Détection du run [{left}:{right}]", left, right)
+
+        # Tri par insertion
+        for j in range(left + 1, right + 1):
+            key = arr[j]
+            k = j - 1
+            while k >= left and arr[k] > key:
+                arr[k + 1] = arr[k]
+                k -= 1
+            arr[k + 1] = key
+
+        snapshot(f"🔵 Run [{left}:{right}] trié", left, right)
+        i += minrun
+
+    # 2) Fusion des runs
+    size = minrun
+    while size < n:
+        for left in range(0, n, 2 * size):
+            mid = min(left + size - 1, n - 1)
+            right = min(left + 2 * size - 1, n - 1)
+            if mid < right:
+                merged = []
+                l, r = left, mid + 1
+                while l <= mid and r <= right:
+                    if arr[l] <= arr[r]:
+                        merged.append(arr[l]); l += 1
+                    else:
+                        merged.append(arr[r]); r += 1
+                while l <= mid:
+                    merged.append(arr[l]); l += 1
+                while r <= right:
+                    merged.append(arr[r]); r += 1
+                arr[left:left+len(merged)] = merged
+                snapshot(f" Fusion [{left}:{mid}] + [{mid+1}:{right}]")
+                
+        size *= 2
+
+    
+    return steps
+
+# ===================== CONSTRUCTION ARBRE 5 NIVEAUX =====================
+def build_tree_levels_5steps(steps):
+    detect = [s for s in steps if "Détection du run" in s["label"]]
+    sorted_runs = [s for s in steps if "trié" in s["label"]]
+    fusion = [s for s in steps if "Fusion [" in s["label"]]
+    fusion_res = [s for s in steps if "Résultat après fusion" in s["label"]]
+    final = [s for s in steps if "final" in s["label"]]
+
+    levels = []
+    if detect: levels.append(detect)
+    if sorted_runs: levels.append(sorted_runs)
+    if fusion: levels.append(fusion)
+    if fusion_res: levels.append(fusion_res)
+    if final: levels.append(final)
+    return levels
+
+# ===================== VUE DJANGO =====================
+
+
+def affiche_timsort(request):
+    steps = []
+    input_list = ""
+    minrun = 32
+
+    if request.method == "POST":
+        input_list = request.POST.get("liste", "")
+        minrun_input = request.POST.get("minrun", "")
+        try:
+            arr = [int(x.strip()) for x in input_list.split(",") if x.strip()]
+            # Auto-détection du minrun
+            if minrun_input.strip() == "":
+                minrun = calc_minrun(len(arr))
+            else:
+                given = int(minrun_input)
+                if given < 32: minrun = given
+                elif 32 <= given <= 64: minrun = given
+                else: minrun = calc_minrun(len(arr))
+
+            steps = timsort_main_steps(arr, minrun)
+        except:
+            steps = [{
+                "label": "❌ Erreur : entrez une liste correcte",
+                "array": [],
+                "run_block": None,
+                "inserted": []
+            }]
+
+    try:
+        tree_levels = build_tree_levels_5steps(steps)
+    except:
+        tree_levels = []
+
+    return render(request, "matrix_structures/affiche_timsort.html", {
+        "steps": steps,
+        "tree_levels": tree_levels,
+        "input_list": input_list,
+        "minrun": minrun
+    })
+
+
+
+
+from django.shortcuts import render
+import os
+import matplotlib.pyplot as plt
+import networkx as nx
+from django.conf import settings
+
+# ===================== ABR =====================
+from django.shortcuts import render
+import os
+import matplotlib.pyplot as plt
+from django.conf import settings
+
+
+# ===================== ABR =====================
+
+class Node:
+    def __init__(self, val):
+        self.val = val
+        self.left = None
+        self.right = None
+
+
+def sorted_array_to_bst(arr):
+    """Convertir un tableau trié en un ABR équilibré"""
+    if not arr:
+        return None
+
+    mid = len(arr) // 2
+    root = Node(arr[mid])
+    root.left = sorted_array_to_bst(arr[:mid])
+    root.right = sorted_array_to_bst(arr[mid+1:])
+
+    return root
+
+
+# ----------- Dessin Matplotlib uniquement -----------
+
+def draw_bst_matplotlib(root):
+    """Dessiner un ABR en utilisant seulement Matplotlib"""
+
+    plt.figure(figsize=(10, 7))
+    plt.axis("off")
+
+    def draw_node(node, x, y, dx):
+        if not node:
+            return
+
+        # Dessiner le noeud
+        plt.text(x, y, str(node.val), ha='center', va='center',
+                 bbox=dict(boxstyle="circle", fc="#93c5fd"))
+
+        # Gauche
+        if node.left:
+            plt.plot([x, x - dx], [y - 1, y - 2], linewidth=1)
+            draw_node(node.left, x - dx, y - 2, dx / 2)
+
+        # Droite
+        if node.right:
+            plt.plot([x, x + dx], [y - 1, y - 2], linewidth=1)
+            draw_node(node.right, x + dx, y - 2, dx / 2)
+
+    draw_node(root, x=0, y=0, dx=4)
+
+    # Sauvegarde dans /static/
+    output_dir = os.path.join(settings.BASE_DIR, "static")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    image_path = os.path.join(output_dir, "abr_matplotlib.png")
+    plt.savefig(image_path, bbox_inches="tight")
+    plt.close()
+
+    return "abr_matplotlib.png"
+
+
+# ===================== VUE =====================
+
+def arbre_final(request):
+    image_path = None
+    input_list = ""
+
+    if request.method == "POST":
+        input_list = request.POST.get("liste", "").strip()
+
+        try:
+            arr = [int(x) for x in input_list.split(",") if x.strip()]
+            arr.sort()
+            bst_root = sorted_array_to_bst(arr)
+            image_path = draw_bst_matplotlib(bst_root)
+        except Exception as e:
+            print("Erreur :", e)
+            image_path = None
+
+    return render(request, "matrix_structures/arbre_final.html", {
+        "input_list": input_list,
+        "image_path": image_path,
+    })

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>BST Animé Correct</title>
+<style>
+body { font-family:"Inter",sans-serif; background: linear-gradient(135deg,#e0f2fe,#eef2ff); text-align:center; padding:40px;}
+h1 { color:#1e3a8a; font-size:32px; margin-bottom:20px;}
+.box { background:white; padding:20px; width:500px; margin:auto; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+input[type=text]{ width:80%; padding:12px; border-radius:10px; border:2px solid #93c5fd; font-size:16px;}
+button{ margin-top:15px; padding:12px 22px; background:#2563eb; border:none; border-radius:10px; color:white; font-size:18px; cursor:pointer; transition:.2s;}
+button:hover{ background:#1d4ed8; transform:scale(1.05);}
+svg{ margin-top:40px; width:95%; height:550px; background:white; border-radius:20px; box-shadow:0 8px 20px rgba(0,0,0,0.1);}
+.node{transition:.3s;} .node:hover{ transform:scale(1.2);}
+.circle{ stroke:#1e3a8a; stroke-width:2; }
+.text{ font-size:15px; fill:#1e3a8a; font-weight:bold;}
+line{ stroke:#64748b; stroke-width:2; }
+</style>
+</head>
+<body>
+
+<h1>Arbre Binaire de Recherche — Correct</h1>
+
+<div class="box">
+<form method="POST">
+    {% csrf_token %}
+    <p>Liste d'entiers (ex: 5,3,8,1,6):</p>
+    <input type="text" name="liste" value="{{ input_list }}" required>
+    <br>
+    <button type="submit">Générer</button>
+</form>
+</div>
+
+{% if input_list %}
+<svg id="svgTree"></svg>
+
+<script>
+const values = "{{ input_list }}".split(",").map(x=>parseInt(x.trim())).filter(x=>!isNaN(x)).sort((a,b)=>a-b);
+const svg = document.getElementById("svgTree");
+const WIDTH = 900;
+const HEIGHT = 500;
+const LEVEL_HEIGHT = 80;
+
+// Crée un BST équilibré
+function buildBST(arr){
+    if(arr.length===0) return null;
+    const mid = Math.floor(arr.length/2);
+    return { val: arr[mid], left: buildBST(arr.slice(0,mid)), right: buildBST(arr.slice(mid+1)) };
+}
+
+// Dessine le BST récursivement
+function drawBST(node, x, y, dx){
+    if(!node) return;
+
+    drawNode(x,y,node.val);
+
+    if(node.left){
+        const childX = x - dx;
+        const childY = y + LEVEL_HEIGHT;
+        drawLine(x,y,childX,childY);
+        drawBST(node.left, childX, childY, dx/1.8);
+    }
+    if(node.right){
+        const childX = x + dx;
+        const childY = y + LEVEL_HEIGHT;
+        drawLine(x,y,childX,childY);
+        drawBST(node.right, childX, childY, dx/1.8);
+    }
+}
+
+// Dessine un noeud
+function drawNode(x,y,val,color="#93c5fd"){
+    const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.classList.add("node");
+    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",22); c.setAttribute("fill",color); c.classList.add("circle");
+    const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x",x); t.setAttribute("y",y+5); t.setAttribute("text-anchor","middle"); t.classList.add("text"); t.textContent = val;
+    g.appendChild(c); g.appendChild(t); svg.appendChild(g);
+}
+
+// Dessine une ligne entre deux noeuds
+function drawLine(x1,y1,x2,y2){
+    const l = document.createElementNS("http://www.w3.org/2000/svg","line");
+    l.setAttribute("x1",x1); l.setAttribute("y1",y1); l.setAttribute("x2",x2); l.setAttribute("y2",y2);
+    svg.appendChild(l);
+}
+
+// Construire et dessiner
+const bst = buildBST(values);
+drawBST(bst, WIDTH/2, 50, WIDTH/4);
+
+</script>
+{% endif %}
+
+</body>
+</html>

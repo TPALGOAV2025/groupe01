@@ -7,7 +7,6 @@ urlpatterns = [
     path('tp1/', views.tp1, name='tp1'),
     path('tree/', views.tree_view, name='tree_view'),
     path('graph/', views.graph_view, name='graph_view'),
-    
     path('tp2/', views.tp2, name='tp2'),
     path('tp3/', views.tp3, name='tp3'),
     path('tp4/', views.tp4, name='tp4'),
@@ -16,6 +15,7 @@ urlpatterns = [
     path('visualisation/', views.visualisation, name='visualisation'),
     path('affiche_timsort/', views.affiche_timsort, name='affiche_timsort'),
     path('simple-visualisation/', views.simple_visualisation, name='simple_visualisation'),
+    path('abr/', views.arbre_final, name='arbre_final'),
     
    
   

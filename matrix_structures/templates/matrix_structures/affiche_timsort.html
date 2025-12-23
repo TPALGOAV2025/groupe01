@@ -70,8 +70,8 @@ form button:hover {
 .node {
     padding: 18px 25px;
     border-radius: 12px;
-    background: #22c55e;  /* Vert par défaut pour les runs initiaux */
-    color: white;
+    background: #ffffff;  /* Vert par défaut pour les runs initiaux */
+    color: rgb(0, 0, 0);
     font-weight: 600;
     min-width: 140px;
     text-align: center;
@@ -81,10 +81,10 @@ form button:hover {
 }
 
 /* Couleurs par étape */
-.node.level-1 { background: #ef4444; }  /* Rouge - Détection */
+.node.level-1 { background: #c26565; }  /* Rouge - Détection */
 .node.level-2 { background: #f97316; }  /* Orange - Run trié */
 .node.level-3 { background: #3b82f6; }  /* Bleu - Fusion */
-.node.level-4 { background: #16a34a; }  /* Vert - Résultat fusion */
+.node.level-4 { background: #29a760; }  /* Vert - Résultat fusion */
 .node.level-5 { background: #8b5cf6; }  /* Violet - Tableau final */
 
 .node.flash-fusion {
@@ -98,7 +98,7 @@ form button:hover {
 }
 
 .node span.num-inserted {
-    background-color: #fde68a;
+    background-color: #ffc400;
     color: #111;
     padding: 3px 6px;
     border-radius: 4px;
@@ -152,7 +152,7 @@ form button:hover {
 </head>
 <body>
 
-<h1>Timsort – Arbre Vertical</h1>
+<h1> tri Timsort </h1>
 
 <form method="POST">
 {% csrf_token %}
@@ -200,6 +200,16 @@ form button:hover {
     </div>
     {% endwith %}
 {% endif %}
+{% if steps %}
+    {% with last_step=steps|last %}
+    <form method="POST" action="{% url 'arbre_final' %}">
+        {% csrf_token %}
+        <!-- On envoie la liste finale triée au format CSV -->
+        <input type="hidden" name="liste" value="{{ last_step.array|join:',' }}">
+        <button type="submit">Afficher ABR du tableau final</button>
+    </form>
+    {% endwith %}
+{% endif %}
 
 </div>
 
@@ -211,6 +221,7 @@ Tableau : {{ s.array }}<br>
 {% if s.run_block %} Run : {{ s.run_block }}<br> {% endif %}
 Complexité : {{ s.complexity }}
 </div>
+
 {% endfor %}
 
 </body>
